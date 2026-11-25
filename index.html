@@ -79,6 +79,39 @@ input[type=range]{accent-color:var(--accent);width:100%}
   border:1px solid var(--border);margin-left:6px;vertical-align:middle;color:var(--muted)}
 .badge.go{background:var(--accent);color:#1b130a;border-color:var(--accent)}
 .menu-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.modes-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.seg{display:inline-flex;background:var(--panel);border:1px solid var(--border);border-radius:999px;padding:3px}
+.seg button{border:0;background:transparent;padding:7px 14px;border-radius:999px;cursor:pointer;color:var(--muted);font-weight:600}
+.seg button.on{background:var(--accent);color:#1b130a}
+.mode-card.chal{border-color:#5a4122;background:linear-gradient(180deg,#2a1f15,#1f1a17)}
+.mode-card.chal:hover:not(.soon){border-color:var(--accent2)}
+/* Desafío: carril de notas */
+.tnext{margin-top:4px;font-size:.9rem;color:var(--muted)} .tnext b{color:var(--accent2)}
+.dots i.cur{box-shadow:0 0 0 3px rgba(240,163,58,.55)}
+.mult{color:var(--accent);margin-left:4px}
+.lane{position:relative;height:92px;margin:10px 0;background:#0e0c0b;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.lane .win{position:absolute;top:0;bottom:0;background:rgba(240,163,58,.13)}
+.lane .hit{position:absolute;top:0;bottom:0;width:4px;background:var(--accent);box-shadow:0 0 12px var(--accent);z-index:2}
+.lane .beat{position:absolute;left:0;top:0;bottom:0;width:1px;background:#3b312a}
+.ncard{position:absolute;left:0;top:14px;height:62px;min-width:70px;padding:0 8px;border-radius:10px;z-index:1;
+  background:#3a2a17;border:2px solid var(--accent);display:flex;flex-direction:column;align-items:center;justify-content:center;
+  transition:background .15s,border-color .15s,opacity .3s}
+.ncard .nt{font-size:1.35rem;font-weight:800;color:var(--accent);line-height:1.1}
+.ncard .ns{font-size:.8rem;font-weight:600}
+.ncard.newt::before{content:'Nueva';position:absolute;top:-12px;font-size:.62rem;background:var(--accent);color:#1b130a;border-radius:6px;padding:0 5px;font-weight:700}
+.ncard.perfect{background:#1d5a3d;border-color:var(--ok)} .ncard.perfect .nt{color:#c9ffe4}
+.ncard.good{background:#1d4a38;border-color:#7fd1a5}
+.ncard.off{background:#4a3d17;border-color:var(--warn)}
+.ncard.miss{background:#4a1d1d;border-color:var(--err);opacity:.75}
+.judge{position:absolute;left:18%;top:2px;transform:translateX(-50%);font-weight:800;font-size:1rem;z-index:3;pointer-events:none;opacity:0;white-space:nowrap}
+.judge.pop{animation:jpop .7s ease}
+.judge.perfect{color:var(--ok)} .judge.good{color:#7fd1a5} .judge.off{color:var(--warn)} .judge.miss{color:var(--err)}
+@keyframes jpop{0%{opacity:0;transform:translateX(-50%) scale(.6)}20%{opacity:1;transform:translateX(-50%) scale(1.15)}70%{opacity:1}100%{opacity:0;transform:translateX(-50%) translateY(-6px)}}
+.lane .overlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;text-align:center;z-index:4;
+  background:rgba(14,12,11,.72);font-size:2.4rem;font-weight:800;color:var(--accent2)}
+.lane .overlay small{font-size:.9rem;color:var(--muted);font-weight:500}
+.lane .overlay.show{display:flex}
+
 
 /* Medidor y afinador */
 .meter{position:relative;height:16px;border-radius:8px;background:#0c0a09;border:1px solid var(--border);overflow:hidden}
@@ -120,7 +153,7 @@ input[type=range]{accent-color:var(--accent);width:100%}
 .tlabel{font-size:.75rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
 .tbig{font-size:4.2rem;font-weight:800;line-height:1;color:var(--accent);white-space:nowrap}
 .tline{font-size:1.5rem;color:var(--text);white-space:nowrap}
-.tline b{color:var(--accent2);font-size:1.15em}
+.tline b{color:var(--accent2);font-size:1.15em;margin-left:.25em}
 .tline small{color:var(--muted);font-weight:600}
 .tpos{display:flex;align-items:center;gap:10px;margin-top:6px;font-size:1rem;color:var(--muted)}
 .tpos b{color:var(--text);font-size:1.15rem}
@@ -174,7 +207,12 @@ table.res td,table.res th{padding:6px 8px;border-bottom:1px solid var(--border);
       <p>Aprende el diapasón tocando tu guitarra real.</p>
     </div>
     <div id="secureWarn"></div>
-    <h3 class="muted small" style="margin:0">MODOS DE JUEGO</h3>
+    <div class="modes-head">
+      <h3 class="muted small" style="margin:0">MODOS DE JUEGO</h3>
+      <div class="seg" id="menuSeg" role="group" aria-label="Tipo de modos">
+        <button data-mm="normal">Normal</button><button data-mm="challenge">⚡ Desafío</button>
+      </div>
+    </div>
     <div class="modes" id="modeList"></div>
     <div class="menu-actions">
       <button class="btn" data-go="audio">🎚️ Configuración de audio</button>
@@ -373,14 +411,15 @@ const Settings = (() => {
   const defaults = () => ({
     frets: 24, tuning: 'standard', naming: 'solfege', accidentals: 'sharp', lefty: false, showNames: false,
     audio: { inputMode: 'mic', deviceId: '', deviceLabel: '', channel: 'left', channelChosen: false,
-             thrMic: -48, thrInterface: -58, tolerance: 40, stableMs: 200 },
-    modes: {}
+             thrMic: -48, thrInterface: -58, tolerance: 40, stableMs: 200, latency: 0 },
+    ui: { menuMode: 'normal' },
+    modes: {}, best: {}
   });
   const S = { data: defaults() };
   function merge(base, src) {
     for (const k in src) {
       if (src[k] && typeof src[k] === 'object' && !Array.isArray(src[k]) && base[k] && typeof base[k] === 'object') merge(base[k], src[k]);
-      else if (k in base || base === S.data.modes) base[k] = src[k];
+      else if (k in base || base === S.data.modes || base === S.data.best) base[k] = src[k];
     }
     return base;
   }
@@ -487,7 +526,7 @@ const PitchDetect = (() => {
         this.pend = null;
         if (f.t - this.candSince >= cfg.stableMs && this.emitted !== m) {
           this.emitted = m;
-          return { midi: m, cents: f.cents, freq: f.freq };
+          return { midi: m, cents: f.cents, freq: f.freq, onset: this.onset };   // onset = instante del ataque
         }
         return null;
       }
@@ -524,6 +563,8 @@ const AudioEngine = (() => {
     }
     if (E.ctx.state === 'suspended') { try { await E.ctx.resume(); } catch (e) {} }
   }
+
+  E.ensureCtx = ensureCtx;
 
   E.listDevices = async () => {
     if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return [];
@@ -867,7 +908,7 @@ const TonicMode = {
     for (let s = 0; s < N; s++) strOpts.push(`<label class="opt"><input type="checkbox" name="str" value="${s}" ${c.strings.includes(s) ? 'checked' : ''}> ${Music.ordinal(s, N)} ${esc(Music.pcName(strings[s]))}</label>`);
     root.innerHTML = `
       <div class="card"><h2>${esc(this.name)}</h2>
-        <p class="muted" style="margin-top:0">El juego te pide una tónica (p. ej. <b>${esc(Music.pcName(0))}</b>). Tócala en <b>todas</b> las posiciones donde aparece en la cuerda indicada, en el orden que quieras. Cuando completes la cuerda pasarás a la siguiente.</p>
+        <p class="muted" style="margin-top:0">${this.introHTML()}</p>
       </div>
       <div class="grid2">
         <div class="card">
@@ -901,6 +942,7 @@ const TonicMode = {
             <select id="rounds">${[5, 7, 10, 12, 15, 20].map(n => `<option value="${n}" ${+c.rounds === n ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
         </div>
       </div>
+      ${this.extraFieldsHTML(c)}
       <div class="card"><h2>Vista previa</h2><div id="setupFb"></div><p class="muted small" id="setupInfo"></p></div>
       <div id="setupMsg"></div>
       <div class="row"><button class="btn primary" id="startBtn">▶ Comenzar</button><button class="btn" data-go="audio">🎚️ Audio</button></div>`;
@@ -915,6 +957,7 @@ const TonicMode = {
         accidentals: $('input[name=acc]:checked', root).value === '1',
         rounds: +$('#rounds', root).value
       };
+      Object.assign(n, this.readExtra(root));
       Settings.data.modes[this.id] = n; Settings.save();
       return n;
     };
@@ -927,14 +970,22 @@ const TonicMode = {
         ? `${n.strings.length} cuerda(s) · trastes ${r[0]}–${r[1]} · ${pcs.length} tónica(s) posibles.`
         : 'Elige al menos una cuerda.';
       $('#startBtn', root).disabled = !n.strings.length || !pcs.length;
+      this.onPreview(root, n);
     };
     root.addEventListener('change', preview);
-    root.addEventListener('input', e => { if (e.target.type === 'number') preview(); });
+    root.addEventListener('input', e => { if (e.target.type === 'number' || e.target.type === 'range') preview(); });
     $('#allStr', root).onclick = () => { $$('input[name=str]', root).forEach(i => i.checked = true); preview(); };
     $('#noStr', root).onclick = () => { $$('input[name=str]', root).forEach(i => i.checked = false); preview(); };
     $('#startBtn', root).onclick = () => app.startGame(this, read(), $('#setupMsg', root));
+    this.afterSetup(root, app);
     preview();
   },
+  /* Ganchos para variantes (p. ej. el modo desafío reutiliza este formulario). */
+  introHTML() { return `El juego te pide una tónica (p. ej. <b>${esc(Music.pcName(0))}</b>). Tócala en <b>todas</b> las posiciones donde aparece en la cuerda indicada, en el orden que quieras. Cuando completes la cuerda pasarás a la siguiente.`; },
+  extraFieldsHTML() { return ''; },
+  readExtra() { return {}; },
+  onPreview() {},
+  afterSetup() {},
 
   /* Tónicas que tienen al menos una posición en las cuerdas y rango elegidos. */
   tonicPool(c) {
@@ -1139,10 +1190,509 @@ const TonicMode = {
   }
 };
 
+/* ============================ METRÓNOMO (compartido por los desafíos) ============================ */
+/* Clic de ruido filtrado (sin altura definida) para que el detector de notas no lo confunda con una nota. */
+const Metronome = (() => {
+  const M = { volume: 0.7, timer: null, beats: [], clickTimes: [], sources: [] };
+  let noise = null;
+  M.prepare = async () => {
+    await AudioEngine.ensureCtx();
+    const c = AudioEngine.ctx;
+    if (!noise) {
+      noise = c.createBuffer(1, Math.floor(c.sampleRate * 0.05), c.sampleRate);
+      const d = noise.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+  };
+  /* Desfase entre el reloj de audio y performance.now(), incluida la latencia de salida. */
+  M.offset = () => {
+    const c = AudioEngine.ctx;
+    if (c.getOutputTimestamp) {
+      const ts = c.getOutputTimestamp();
+      if (ts && ts.performanceTime > 0 && ts.contextTime > 0) return ts.performanceTime - ts.contextTime * 1000;
+    }
+    return performance.now() - c.currentTime * 1000 + (c.outputLatency || c.baseLatency || 0) * 1000;
+  };
+  function click(atSec, accent) {
+    const c = AudioEngine.ctx, src = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+    src.buffer = noise; f.type = 'bandpass'; f.frequency.value = accent ? 3400 : 2500; f.Q.value = 1.4;
+    const v = Math.max(0.0002, M.volume * (accent ? 1.6 : 1));
+    g.gain.setValueAtTime(v, atSec); g.gain.exponentialRampToValueAtTime(0.0001, atSec + 0.035);
+    src.connect(f); f.connect(g); g.connect(c.destination);
+    src.start(atSec); src.stop(atSec + 0.05);
+    M.sources.push(src); if (M.sources.length > 8) M.sources.shift();
+  }
+  /* Programa clics. beats: [{ t (performance.now, ms), accent }] */
+  M.play = beats => {
+    M.stop(); M.beats = beats.slice(); let i = 0;
+    const loop = () => {
+      const now = performance.now(), off = M.offset(), c = AudioEngine.ctx;
+      while (i < M.beats.length && M.beats[i].t - now < 160) {
+        const b = M.beats[i++];
+        if (b.t < now - 15) continue;
+        click(Math.max(c.currentTime, (b.t - off) / 1000), b.accent);
+        M.clickTimes.push(b.t); if (M.clickTimes.length > 16) M.clickTimes.shift();
+      }
+      if (i >= M.beats.length) { clearInterval(M.timer); M.timer = null; }
+    };
+    loop(); M.timer = setInterval(loop, 25);
+  };
+  M.stop = () => {
+    if (M.timer) clearInterval(M.timer); M.timer = null; M.beats = [];
+    const now = AudioEngine.ctx ? AudioEngine.ctx.currentTime : 0;
+    M.sources.forEach(s => { try { s.stop(now); } catch (e) {} }); M.sources = [];
+  };
+  /* ¿El instante t coincide con un clic? (para ignorar el eco del metrónomo captado por el micrófono) */
+  M.nearClick = (t, ms = 45) => M.clickTimes.some(x => Math.abs(x - t) < ms);
+  return M;
+})();
+
+/* Calibración de latencia: 4 clics de entrada + 8 clics; el jugador toca una nota en cada uno.
+   Guarda la mediana del retraso (ms) en Settings.data.audio.latency. */
+async function calibrateLatency(statusEl, onDone) {
+  const say = (k, h) => { statusEl.innerHTML = `<div class="msg ${k}">${h}</div>`; };
+  if (Settings.data.audio.inputMode === 'none') return say('warn', 'La calibración necesita micrófono o interfaz. En modo sin audio no hace falta.');
+  if (!AudioEngine.running) { try { await AudioEngine.start(); } catch (err) { return say('err', audioErrorMessage(err)); } }
+  await Metronome.prepare();
+  Metronome.volume = 0.8;
+  const period = 750, T0 = performance.now() + 800, beats = [];
+  for (let k = 0; k < 12; k++) beats.push({ t: T0 + k * period, accent: k % 4 === 0 });
+  const onsets = [];
+  const off = NoteBus.on(ev => { if (ev.source === 'audio' && ev.onset) onsets.push(ev.onset); });
+  Metronome.play(beats);
+  const tick = setInterval(() => {
+    const k = Math.floor((performance.now() - T0) / period);
+    if (k < 4) say('info', `Escucha la cuenta de entrada… <b>${4 - Math.max(0, k)}</b>`);
+    else if (k < 12) say('info', `🎸 Toca una nota (cualquiera) justo en cada clic: <b>${k - 3}/8</b> · notas detectadas: ${onsets.length}`);
+  }, 60);
+  await new Promise(r => setTimeout(r, T0 - performance.now() + 12 * period + 700));
+  clearInterval(tick); off(); Metronome.stop();
+  const diffs = [];
+  for (let k = 4; k < 12; k++) {
+    const bt = T0 + k * period; let best = null;
+    for (const o of onsets) if (Math.abs(o - bt) < 400 && (best === null || Math.abs(o - bt) < Math.abs(best))) best = o - bt;
+    if (best !== null) diffs.push(best);
+  }
+  if (diffs.length < 4) return say('err', `Solo se detectaron ${diffs.length} notas a tiempo. Revisa el nivel de entrada en la configuración de audio y vuelve a intentarlo.`);
+  diffs.sort((a, b) => a - b);
+  const med = Math.round(diffs[Math.floor(diffs.length / 2)]);
+  Settings.data.audio.latency = Math.max(-150, Math.min(400, med)); Settings.save();
+  say('ok', `✔ Latencia calibrada: <b>${Settings.data.audio.latency} ms</b> (con ${diffs.length} de 8 notas).`);
+  onDone && onDone();
+}
+
+/* ============================ MODO DESAFÍO: ENCUENTRA LA TÓNICA ============================ */
+const CHALLENGE_LEVELS = {
+  easy:   { name: 'Fácil',   bpm: 60,  pulses: 2, window: 250, rest: 1 },
+  medium: { name: 'Medio',   bpm: 80,  pulses: 1, window: 180, rest: 1 },
+  hard:   { name: 'Difícil', bpm: 100, pulses: 1, window: 120, rest: 0 },
+  custom: { name: 'Personalizado' }
+};
+const LEVEL_ORDER = ['easy', 'medium', 'hard'];
+
+/* Hereda de TonicMode (formulario, rangos, tónicas posibles) y cambia la jugabilidad. */
+const TonicChallenge = Object.assign(Object.create(TonicMode), {
+  id: 'tonic-challenge',
+  isChallenge: true,
+  name: 'Encuentra la tónica · Desafío',
+  description: 'Toca la tónica en todas sus posiciones, una en cada pulso del metrónomo.',
+
+  defaults() {
+    return Object.assign(TonicMode.defaults(), { posOrder: 'free', level: 'easy', bpm: 70, pulses: 1, window: 200, rest: 1, volume: 70 });
+  },
+  params(c) {
+    if (c.level !== 'custom') return CHALLENGE_LEVELS[c.level] || CHALLENGE_LEVELS.easy;
+    return { name: 'Personalizado', bpm: Math.max(40, Math.min(160, +c.bpm || 70)), pulses: +c.pulses || 1, window: +c.window || 200, rest: +c.rest || 0 };
+  },
+  levelText(p) {
+    return `${p.bpm} BPM · una nota cada ${p.pulses === 1 ? 'pulso' : p.pulses + ' pulsos'} · ventana ±${p.window} ms · ` +
+      (p.rest ? `${p.rest} pulso${p.rest > 1 ? 's' : ''} de descanso al cambiar de cuerda o tónica` : 'sin descanso');
+  },
+  bestKey(c) { return this.id + ':' + c.level; },
+
+  introHTML() {
+    return `⚡ <b>Modo desafío.</b> El metrónomo marca el ritmo y cada pulso pide <b>una posición</b> de la tónica en la cuerda indicada. Debes recorrer <b>todas</b> las posiciones de cada cuerda, tocando cada una justo en su pulso. Las notas que vienen avanzan por el carril hacia la línea de golpe.`;
+  },
+  extraFieldsHTML(c) {
+    const opt = (name, v, label, cur) => `<label class="opt"><input type="radio" name="${name}" value="${v}" ${cur === v ? 'checked' : ''}> ${label}</label>`;
+    const sel = (id, vals, cur, fmt) => `<select id="${id}">${vals.map(v => `<option value="${v}" ${+cur === v ? 'selected' : ''}>${fmt(v)}</option>`).join('')}</select>`;
+    return `
+      <div class="grid2">
+        <div class="card">
+          <div class="field"><span class="lbl">Nivel</span>
+            <div class="row">${Object.entries(CHALLENGE_LEVELS).map(([k, L]) => opt('level', k, L.name, c.level)).join('')}</div>
+            <p class="muted small" id="lvlInfo"></p>
+            <div class="row" id="customLvl">
+              <label class="small">Tempo <input type="number" id="cBpm" min="40" max="160" value="${c.bpm}"> BPM</label>
+              <label class="small">Nota cada ${sel('cPulses', [1, 2, 4], c.pulses, v => v + (v === 1 ? ' pulso' : ' pulsos'))}</label>
+              <label class="small">Ventana ${sel('cWin', [80, 120, 150, 180, 200, 250, 300], c.window, v => '±' + v + ' ms')}</label>
+              <label class="small">Descanso ${sel('cRest', [0, 1, 2], c.rest, v => v + (v === 1 ? ' pulso' : ' pulsos'))}</label>
+            </div></div>
+          <div class="field"><span class="lbl">Orden de las posiciones en cada cuerda</span>
+            <div class="row">${opt('posOrder', 'free', 'Libre', c.posOrder)}${opt('posOrder', 'asc', 'Ascendente (traste bajo → alto)', c.posOrder)}${opt('posOrder', 'desc', 'Descendente (alto → bajo)', c.posOrder)}</div>
+            <p class="muted small">Libre: en cada pulso vale cualquier posición que te falte. Ascendente/descendente: el carril te indica el traste.</p></div>
+        </div>
+        <div class="card">
+          <div class="field"><span class="lbl">Volumen del metrónomo: <span id="volVal"></span>%</span>
+            <input type="range" id="cVol" min="0" max="100" value="${c.volume}"></div>
+          <div class="field"><span class="lbl">Latencia</span>
+            <p class="muted small" id="latInfo" style="margin-top:0"></p>
+            <div class="row"><button class="btn small" id="calBtn">🎯 Calibrar latencia</button><button class="btn small" id="calReset">Restablecer a 0</button></div>
+            <div id="calStatus"></div></div>
+          <div id="hpWarn"></div>
+          <p class="small" id="bestInfo"></p>
+        </div>
+      </div>`;
+  },
+  readExtra(root) {
+    return {
+      level: $('input[name=level]:checked', root).value,
+      posOrder: $('input[name=posOrder]:checked', root).value,
+      bpm: Math.max(40, Math.min(160, Math.round(+$('#cBpm', root).value || 70))),
+      pulses: +$('#cPulses', root).value, window: +$('#cWin', root).value, rest: +$('#cRest', root).value,
+      volume: +$('#cVol', root).value
+    };
+  },
+  onPreview(root, n) {
+    $('#customLvl', root).classList.toggle('hidden', n.level !== 'custom');
+    $('#lvlInfo', root).textContent = this.levelText(this.params(n));
+    $('#volVal', root).textContent = n.volume;
+    const lat = Settings.data.audio.latency || 0, mode = Settings.data.audio.inputMode;
+    $('#latInfo', root).textContent = mode === 'none'
+      ? 'En modo sin audio no se necesita calibrar.'
+      : `Latencia guardada: ${lat} ms. Calíbrala si sientes que siempre llegas "tarde" o "temprano" (recomendado con micrófono o audífonos Bluetooth).`;
+    $('#calBtn', root).disabled = mode === 'none';
+    $('#hpWarn', root).innerHTML = mode === 'mic'
+      ? '<div class="msg warn small">🎧 Con micrófono, usa <b>audífonos con cable</b> para que el micrófono no capte el metrónomo. Los audífonos Bluetooth añaden retraso: si los usas, calibra la latencia.</div>' : '';
+    const best = Settings.data.best[this.bestKey(n)];
+    $('#bestInfo', root).innerHTML = best ? `🏆 Mejor puntuación en <b>${esc(this.params(n).name)}</b>: <b>${best}</b>` : '';
+  },
+  afterSetup(root) {
+    $('#calBtn', root).onclick = async () => {
+      $('#calBtn', root).disabled = true;
+      await calibrateLatency($('#calStatus', root), () => {});
+      $('#calBtn', root).disabled = Settings.data.audio.inputMode === 'none';
+      root.dispatchEvent(new Event('change'));
+    };
+    $('#calReset', root).onclick = () => { Settings.data.audio.latency = 0; Settings.save(); $('#calStatus', root).innerHTML = ''; root.dispatchEvent(new Event('change')); };
+  },
+
+  /* ---------------- Partida ---------------- */
+  start(root, c, app) {
+    const self = this, strings = Music.tuning(), N = strings.length, range = this.rangeOf(c), P = this.params(c);
+    const period = 60000 / P.bpm, win = P.window;
+    const simulate = Settings.data.audio.inputMode === 'none';
+    const latency = Settings.data.audio.latency || 0;
+    const detectDelay = simulate ? 60 : Settings.data.audio.stableMs + 200;
+    Metronome.volume = (c.volume != null ? c.volume : 70) / 100;
+    const tn = pc => esc(Music.pcName(pc));
+
+    // ---- Secuencia completa: tónicas → cuerdas → una posición por pulso ----
+    const pool = this.tonicPool(c), groups = [], slots = [];
+    let beat = 4, prevPc = null;
+    for (let r = 0; r < c.rounds; r++) {
+      const choices = pool.length > 1 ? pool.filter(p => p !== prevPc) : pool;
+      const pc = choices[Math.floor(Math.random() * choices.length)]; prevPc = pc;
+      let order = c.strings.slice().sort((a, b) => a - b);
+      if (c.order === 'high-low') order.reverse();
+      if (c.order === 'random') order = shuffle(order);
+      order.map(s => ({ s, pc, round: r, frets: Music.positions(strings, s, pc, range[0], range[1]), found: new Set(), slots: [], revealUntil: 0 }))
+        .filter(g => g.frets.length)
+        .forEach((g, gi) => {
+          if (groups.length) beat += P.rest;
+          const fr = c.posOrder === 'desc' ? g.frets.slice().reverse() : g.frets.slice();
+          fr.forEach((f, k) => {
+            const sl = { g, beat, fret: c.posOrder === 'free' ? null : f, idx: slots.length, judged: null, newTonic: gi === 0 && k === 0 };
+            slots.push(sl); g.slots.push(sl); beat += P.pulses;
+          });
+          groups.push(g);
+        });
+    }
+    const lastBeat = beat;
+    const stats = { perfect: 0, good: 0, off: 0, miss: 0, score: 0, streak: 0, maxStreak: 0, dts: [],
+                    perTonic: {}, perString: {}, perFret: {}, total: slots.length };
+
+    root.innerHTML = `
+      <div class="game-head">
+        <div class="target" id="gPrompt">
+          <span class="tlabel">⚡ Toca la tónica</span>
+          <span class="tbig" id="gTonic">…</span>
+          <span class="tline">en la <b id="gStr">…</b></span>
+          <span class="tpos"><span class="dots" id="gDots"></span><span id="gPos">…</span></span>
+          <span class="tnext" id="gNext"></span>
+        </div>
+        <div class="stats">
+          <span class="stat">Puntos <b id="gScore">0</b></span>
+          <span class="stat">Racha <b id="gStreak">0</b> <b class="mult" id="gMult"></b></span>
+          <span class="stat">Tónica <b id="gRound">1</b>/${c.rounds}</span>
+          <button class="btn small" id="gPause">⏸ Pausa</button>
+        </div>
+      </div>
+      <div class="lane" id="gLane">
+        <div class="win"></div><div class="hit"></div>
+        <div class="judge" id="gJudge"></div>
+        <div class="overlay" id="gOverlay"></div>
+      </div>
+      <div id="gListen"></div>
+      <div id="gFb" style="margin-top:10px"></div>
+      <div class="fb-hint">${simulate ? '🖱️ Modo sin audio: haz clic en la posición justo en el pulso.' : 'Toca cada posición justo cuando la tarjeta llegue a la línea.'} · Espacio = pausa</div>
+      <div class="feedback info" id="gFeedback">Prepárate: escucha la cuenta de entrada.</div>
+      <div class="game-foot">
+        <label class="opt"><input type="checkbox" id="gNames" ${Settings.data.showNames ? 'checked' : ''}> Mostrar nombres</label>
+        <button class="btn" id="gEnd">Terminar partida</button>
+      </div>`;
+    const el = id => $('#' + id, root);
+    const lane = el('gLane'), overlay = el('gOverlay');
+    const listen = createListenIndicator(el('gListen'));
+    const fb = new Fretboard(el('gFb'), { onPlay: (s, f) => NoteBus.emit({ midi: strings[s] + f, cents: 0, source: 'sim', s, f, t: performance.now() }) });
+    const feedback = (kind, html) => { const f = el('gFeedback'); f.className = 'feedback ' + kind; f.innerHTML = html; };
+
+    let T0 = 0, countInEnd = 0, paused = false, finished = false, raf = 0, cur = null, fbDirty = true, lastHitMidi = null;
+    const cards = new Map(), beatEls = [];
+    const setTimes = t0 => { T0 = t0; slots.forEach(sl => sl.time = T0 + sl.beat * period); };
+
+    function play(fromBeat) {
+      const b0 = fromBeat - 4;
+      setTimes(performance.now() + 700 - b0 * period);
+      countInEnd = T0 + fromBeat * period;
+      const beats = [];
+      for (let k = b0; k <= lastBeat; k++) beats.push({ t: T0 + k * period, accent: (k - b0) % 4 === 0 });
+      Metronome.play(beats);
+      paused = false; overlay.classList.remove('show');
+      el('gPause').textContent = '⏸ Pausa';
+    }
+    function pause() {
+      if (paused || finished) return;
+      paused = true; Metronome.stop();
+      overlay.innerHTML = '<div>⏸ Pausa<br><small>Pulsa Espacio o “Continuar”</small></div>'; overlay.classList.add('show');
+      el('gPause').textContent = '▶ Continuar';
+    }
+    function resume() {
+      const next = slots.find(sl => !sl.judged);
+      if (!next) return;
+      play(next.beat);
+    }
+
+    const mult = () => stats.streak >= 30 ? 4 : stats.streak >= 20 ? 3 : stats.streak >= 10 ? 2 : 1;
+    const bump = (obj, key) => { obj[key] = (obj[key] || 0) + 1; };
+    function judge(sl, kind, dt, msg) {
+      sl.judged = kind;
+      const g = sl.g;
+      if (kind === 'perfect' || kind === 'good') {
+        stats[kind]++; stats.streak++; stats.maxStreak = Math.max(stats.maxStreak, stats.streak);
+        stats.score += (kind === 'perfect' ? 100 : 50) * mult(); stats.dts.push(dt);
+        listen.flash('hit');
+      } else if (kind === 'off') {
+        stats.off++; stats.streak = 0; stats.score += 10; stats.dts.push(dt); listen.flash('hit');
+      } else {
+        stats.miss++; stats.streak = 0; bump(stats.perTonic, g.pc); bump(stats.perString, g.s); listen.flash('miss');
+      }
+      const label = { perfect: '¡Perfecto!', good: '¡Bien!', off: dt < 0 ? 'Temprano' : 'Tarde', miss: 'Fallo' }[kind];
+      const j = el('gJudge'); j.className = 'judge ' + kind; j.textContent = label; void j.offsetWidth; j.classList.add('pop');
+      const card = cards.get(sl.idx); if (card) card.classList.add(kind);
+      feedback(kind === 'miss' ? 'err' : kind === 'off' ? 'info' : 'ok', msg);
+      if (g.slots.every(x => x.judged)) {
+        const missing = g.frets.filter(f => !g.found.has(f));
+        missing.forEach(f => bump(stats.perFret, g.s + ':' + f));
+        if (missing.length) { g.revealUntil = performance.now() + 1800; feedback('err', `${msg} · Faltaron en la ${Music.ordinal(g.s, N)} cuerda: traste${missing.length > 1 ? 's' : ''} <b>${missing.join(', ')}</b>.`); }
+      }
+      fbDirty = true; updateHud(true);
+      if (slots.every(x => x.judged)) { finished = true; Metronome.stop(); setTimeout(finish, 900); }
+    }
+
+    function onNote(ev) {
+      if (paused || finished) return;
+      let t = ev.onset || ev.t || performance.now();
+      if (ev.source === 'audio') {
+        if (ev.midi === lastHitMidi && Metronome.nearClick(ev.onset)) return;   // eco del metrónomo
+        t -= latency;
+      }
+      let best = null, bd = Infinity;
+      for (const sl of slots) {
+        if (sl.time > t + 2 * win) break;
+        if (sl.judged) continue;
+        const d = Math.abs(t - sl.time); if (d < bd) { bd = d; best = sl; }
+      }
+      const played = esc(Music.noteName(ev.midi));
+      if (!best || bd > 2 * win) { feedback('info', `Tocaste ${played} fuera de tiempo: espera el pulso.`); return; }
+      const g = best.g, fret = ev.midi - strings[g.s], dt = Math.round(t - best.time);
+      lastHitMidi = ev.midi;
+      const where = `${tn(g.pc)} en la ${Music.ordinal(g.s, N)} cuerda`;
+      if (ev.source === 'sim' && ev.s !== g.s) return judge(best, 'miss', dt, `✘ Esa posición es de la ${Music.ordinal(ev.s, N)} cuerda. Se pedía ${where}.`);
+      if (!g.frets.includes(fret)) {
+        const samePc = Music.mod12(ev.midi) === Music.mod12(g.pc);
+        return judge(best, 'miss', dt, samePc ? `✘ Tocaste ${played}: esa octava no está en la ${Music.ordinal(g.s, N)} cuerda dentro del rango.` : `✘ Tocaste ${played}. Se pedía ${where}.`);
+      }
+      if (g.found.has(fret)) return judge(best, 'miss', dt, `✘ El traste ${fret} ya lo tocaste. Busca otra posición de ${tn(g.pc)}.`);
+      if (best.fret !== null && best.fret !== fret) return judge(best, 'miss', dt, `✘ Tocaste el traste ${fret}, pero tocaba el traste ${best.fret}.`);
+      g.found.add(fret);
+      const ad = Math.abs(dt), kind = ad <= win / 2 ? 'perfect' : ad <= win ? 'good' : 'off';
+      const timing = ad <= 15 ? 'justo en el pulso' : `${ad} ms ${dt < 0 ? 'antes' : 'después'}`;
+      judge(best, kind, dt, `${kind === 'off' ? '◐' : '✔'} ${played} en el traste ${fret} · ${timing}.`);
+    }
+
+    function currentSlot(now) {
+      let first = null;
+      for (const sl of slots) { if (sl.judged) continue; if (!first) first = sl; if (sl.time >= now - win) return sl; }
+      return first;
+    }
+    function slotLabel(sl) { return `${tn(sl.g.pc)} · ${Music.ordinal(sl.g.s, N)}${sl.fret !== null ? ' · t' + sl.fret : ''}`; }
+
+    function updateHud(force) {
+      const now = performance.now(), sl = currentSlot(now);
+      if (!force && sl === cur) return;
+      cur = sl; fbDirty = true;
+      el('gScore').textContent = stats.score;
+      el('gStreak').textContent = stats.streak;
+      el('gMult').textContent = mult() > 1 ? '×' + mult() : '';
+      if (!sl) return;
+      const g = sl.g;
+      el('gRound').textContent = g.round + 1;
+      const setBig = (id, html) => { const e = el(id); if (e.dataset.v !== html) { e.dataset.v = html; e.innerHTML = `<span class="pulse">${html}</span>`; } };
+      setBig('gTonic', tn(g.pc));
+      setBig('gStr', `${Music.ordinal(g.s, N)} cuerda <small>(${esc(Music.pcName(strings[g.s]))})</small>`);
+      el('gDots').innerHTML = g.frets.map(f => `<i class="${g.found.has(f) ? 'on' : ''} ${sl.fret === f ? 'cur' : ''}"></i>`).join('');
+      el('gPos').innerHTML = `<b>${g.found.size}/${g.frets.length}</b> posiciones${sl.fret !== null ? ` · ahora: <b>traste ${sl.fret}</b>` : ''}`;
+      const nx = slots[sl.idx + 1];
+      el('gNext').innerHTML = !nx ? 'Última nota' : nx.g.pc !== g.pc || nx.g.round !== g.round ? `Después: nueva tónica <b>${tn(nx.g.pc)}</b>` : `Siguiente: ${slotLabel(nx)}`;
+    }
+
+    function drawFb() {
+      fbDirty = false;
+      const now = performance.now(), g = cur ? cur.g : null, markers = [];
+      groups.forEach(x => {
+        if (g && x.round === g.round) x.found.forEach(f => markers.push({ s: x.s, f, type: x === g ? 'found' : 'done', label: Music.shortName(x.pc) }));
+        if (x.revealUntil > now) x.frets.filter(f => !x.found.has(f)).forEach(f => markers.push({ s: x.s, f, type: 'target', label: Music.shortName(x.pc) }));
+      });
+      fb.render({ activeStrings: new Set(c.strings), currentString: g ? g.s : null, range, markers, clickable: simulate });
+    }
+
+    function frame() {
+      raf = requestAnimationFrame(frame);
+      const now = performance.now();
+      if (!paused && !finished) {
+        for (const sl of slots) {
+          if (sl.time > now) break;
+          if (!sl.judged && now > sl.time + 2 * win + detectDelay) judge(sl, 'miss', 0, `✘ No tocaste ${tn(sl.g.pc)} en la ${Music.ordinal(sl.g.s, N)} cuerda a tiempo.`);
+        }
+      }
+      updateHud(false);
+      if (groups.some(x => x.revealUntil && x.revealUntil < now && !x.revealDone)) { groups.forEach(x => { if (x.revealUntil && x.revealUntil < now) x.revealDone = true; }); fbDirty = true; }
+      if (fbDirty) drawFb();
+      // ---- carril ----
+      const W = lane.clientWidth, hitX = W * 0.18;
+      // anticipación: al menos ~2,6 s, pero con un mínimo de 96 px entre notas para que no se encimen
+      const look = Math.min(Math.max(5 * P.pulses * period, 2600), (W - hitX) * P.pulses * period / 96), ppm = (W - hitX) / look;
+      const tNow = paused ? (lane._frozen || now) : now; lane._frozen = paused ? tNow : 0;
+      const w = lane.querySelector('.win'); w.style.left = (hitX - win * ppm) + 'px'; w.style.width = (2 * win * ppm) + 'px';
+      lane.querySelector('.hit').style.left = (hitX - 2) + 'px';
+      // pulsos
+      const kMin = Math.ceil((tNow - T0 - hitX / ppm) / period), kMax = Math.floor((tNow - T0 + look) / period);
+      let bi = 0;
+      for (let k = Math.max(kMin, 0); k <= Math.min(kMax, lastBeat); k++, bi++) {
+        let b = beatEls[bi]; if (!b) { b = document.createElement('div'); b.className = 'beat'; lane.insertBefore(b, overlay); beatEls[bi] = b; }
+        b.style.display = ''; b.style.transform = `translateX(${hitX + (T0 + k * period - tNow) * ppm}px)`;
+      }
+      for (; bi < beatEls.length; bi++) beatEls[bi].style.display = 'none';
+      // tarjetas
+      for (const sl of slots) {
+        const x = hitX + (sl.time - tNow) * ppm, vis = x > -80 && x < W + 80;
+        let cd = cards.get(sl.idx);
+        if (vis && !cd) {
+          cd = document.createElement('div'); cd.className = 'ncard' + (sl.newTonic ? ' newt' : '') + (sl.judged ? ' ' + sl.judged : '');
+          cd.innerHTML = `<span class="nt">${tn(sl.g.pc)}</span><span class="ns">${Music.ordinal(sl.g.s, N)}${sl.fret !== null ? ' · t' + sl.fret : ''}</span>`;
+          lane.insertBefore(cd, overlay); cards.set(sl.idx, cd);
+        }
+        if (cd) { if (!vis) { cd.remove(); cards.delete(sl.idx); } else cd.style.transform = `translateX(${x}px) translateX(-50%)`; }
+        if (sl.time - tNow > look + 400) break;
+      }
+      // cuenta de entrada
+      if (!paused && !finished) {
+        if (now < countInEnd) {
+          const n = Math.ceil((countInEnd - now) / period);
+          overlay.innerHTML = `<div>${n <= 4 ? n : 'Prepárate'}</div>`; overlay.classList.add('show');
+        } else overlay.classList.remove('show');
+      }
+    }
+
+    function finish() {
+      if (destroyed) return;
+      const key = self.bestKey(c), prev = Settings.data.best[key] || 0, record = stats.score > prev;
+      if (record) { Settings.data.best[key] = stats.score; Settings.save(); }
+      const html = self.resultsHTML(stats, c, P, prev, record);
+      const li = LEVEL_ORDER.indexOf(c.level);
+      const extra = li >= 0 && li < LEVEL_ORDER.length - 1
+        ? { label: `⬆ Subir a ${CHALLENGE_LEVELS[LEVEL_ORDER[li + 1]].name}`, fn: () => { const n = Object.assign({}, c, { level: LEVEL_ORDER[li + 1] }); Settings.data.modes[self.id] = n; Settings.save(); app.startGame(self, n); } }
+        : null;
+      destroy();
+      app.showResults(html, () => app.startGame(self, c), extra);
+    }
+
+    const offNote = NoteBus.on(onNote);
+    const offSet = Settings.onChange(() => { listen.refresh(); fbDirty = true; });
+    const onKey = e => {
+      if (e.code !== 'Space' || /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
+      e.preventDefault(); if (paused) resume(); else pause();
+    };
+    const onVis = () => { if (document.hidden) pause(); };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('visibilitychange', onVis);
+    el('gPause').onclick = e => { e.currentTarget.blur(); if (paused) resume(); else pause(); };
+    el('gNames').onchange = e => { Settings.data.showNames = e.target.checked; Settings.changed(); };
+    el('gEnd').onclick = () => { if (stats.perfect + stats.good + stats.off + stats.miss) { finished = true; Metronome.stop(); finish(); } else app.show('setup'); };
+
+    let destroyed = false;
+    function destroy() {
+      if (destroyed) return; destroyed = true;
+      Metronome.stop(); cancelAnimationFrame(raf); offNote(); offSet(); listen.destroy();
+      document.removeEventListener('keydown', onKey); document.removeEventListener('visibilitychange', onVis);
+    }
+
+    if (!slots.length) { feedback('err', 'No hay posiciones para tocar con esta configuración.'); return { destroy }; }
+    Metronome.prepare().then(() => { if (!destroyed) { play(4); frame(); } });
+    return { destroy };
+  },
+
+  resultsHTML(stats, c, P, prevBest, record) {
+    const strings = Music.tuning(), N = strings.length, total = stats.total;
+    const hits = stats.perfect + stats.good + stats.off;
+    const acc = total ? Math.round((stats.perfect + stats.good) / total * 100) : 0;
+    const avg = stats.dts.length ? Math.round(stats.dts.reduce((a, b) => a + b, 0) / stats.dts.length) : null;
+    const trend = avg === null ? 'Sin datos de tiempo.' : Math.abs(avg) <= 20 ? `Vas muy a tiempo (promedio ${avg >= 0 ? '+' : ''}${avg} ms). 👌`
+      : avg > 0 ? `Sueles llegar <b>${avg} ms tarde</b>. Anticípate un poco${Settings.data.audio.inputMode !== 'none' ? ' o recalibra la latencia' : ''}.`
+      : `Sueles llegar <b>${-avg} ms temprano</b>. Espera un poco más al pulso${Settings.data.audio.inputMode !== 'none' ? ' o recalibra la latencia' : ''}.`;
+    const top = (obj, fmt) => Object.entries(obj).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([k, v]) => `<tr><td>${fmt(k)}</td><td>${v}</td></tr>`).join('');
+    const tbl = (title, head, rows) => `<div class="card"><h2>${title}</h2>${rows ? `<table class="res"><tr><th>${head}</th><th>Fallos</th></tr>${rows}</table>` : '<p class="muted">¡Sin fallos! 🎉</p>'}</div>`;
+    return `
+      <div class="card"><h2>⚡ Fin del desafío · ${esc(P.name)} <span class="muted small">(${esc(this.levelText(P))})</span></h2>
+        ${record ? `<div class="msg ok">🏆 ¡Nuevo récord en ${esc(P.name)}! ${prevBest ? `(antes: ${prevBest})` : ''}</div>` : prevBest ? `<p class="muted small">Mejor puntuación en este nivel: ${prevBest}</p>` : ''}
+        <div class="bigstats">
+          <div class="bigstat"><b style="color:var(--accent)">${stats.score}</b>puntos</div>
+          <div class="bigstat"><b>${acc}%</b>precisión</div>
+          <div class="bigstat"><b style="color:var(--ok)">${stats.perfect}</b>perfectos</div>
+          <div class="bigstat"><b>${stats.good}</b>bien</div>
+          <div class="bigstat"><b style="color:var(--warn)">${stats.off}</b>temprano/tarde</div>
+          <div class="bigstat"><b style="color:var(--err)">${stats.miss}</b>fallos</div>
+          <div class="bigstat"><b>${stats.maxStreak}</b>racha máxima</div>
+          <div class="bigstat"><b>${hits}/${total}</b>posiciones completadas</div>
+        </div>
+        <p>⏱ ${trend}</p>
+      </div>
+      <div class="grid2">
+        ${tbl('Tónicas que más te costaron', 'Tónica', top(stats.perTonic, k => esc(Music.pcName(+k))))}
+        ${tbl('Cuerdas que más te costaron', 'Cuerda', top(stats.perString, k => esc(Music.stringLabel(+k, strings))))}
+        ${tbl('Posiciones que más se te escaparon', 'Posición', top(stats.perFret, k => { const [s, f] = k.split(':').map(Number); return `${Music.ordinal(s, N)} cuerda, traste ${f} (${esc(Music.noteName(strings[s] + f))})`; }))}
+      </div>`;
+  }
+});
+TonicMode.challengeVariant = TonicChallenge;
+
 /* ============================ REGISTRO DE MODOS ============================ */
 /* Para añadir un modo: crear un objeto con { id, name, description, renderSetup(root, app),
    start(root, config, app) → {destroy} } y agregarlo aquí. Los que no tienen
-   módulo aparecen como "Próximamente". */
+   módulo aparecen como "Próximamente". Su versión desafío va en `challengeVariant`
+   (si no existe, en el menú Desafío aparece como "Próximamente"). Los modos normales
+   y los de desafío son independientes: el interruptor del menú solo cambia cuál se muestra. */
 const MODES = [
   TonicMode,
   { id: 'note-everywhere', name: 'Una nota en todas las cuerdas', description: 'Encuentra la misma nota en las seis cuerdas, lo más rápido posible.', comingSoon: true },
@@ -1195,14 +1745,23 @@ const App = {
   },
 
   renderMenu() {
-    $('#modeList').innerHTML = MODES.map(m => `
-      <div class="mode-card ${m.comingSoon ? 'soon' : ''}" data-mode="${m.id}" role="button" tabindex="${m.comingSoon ? -1 : 0}">
-        <h3>${esc(m.name)} ${m.comingSoon ? '<span class="badge">Próximamente</span>' : '<span class="badge go">Jugar</span>'}</h3>
-        <p>${esc(m.description)}</p></div>`).join('');
+    const ch = Settings.data.ui.menuMode === 'challenge';
+    $$('#menuSeg button').forEach(b => {
+      b.classList.toggle('on', b.dataset.mm === (ch ? 'challenge' : 'normal'));
+      b.onclick = () => { Settings.data.ui.menuMode = b.dataset.mm; Settings.save(); this.renderMenu(); };
+    });
+    const list = MODES.map(m => {
+      const v = ch ? m.challengeVariant : m, playable = !!v && !v.comingSoon && !m.comingSoon;
+      return { m, v, playable, desc: ch ? (v ? v.description : 'Versión con metrónomo: próximamente.') : m.description };
+    });
+    $('#modeList').innerHTML = list.map(({ m, playable, desc }) => `
+      <div class="mode-card ${playable ? '' : 'soon'} ${ch ? 'chal' : ''}" data-mode="${m.id}" role="button" tabindex="${playable ? 0 : -1}">
+        <h3>${ch ? '⚡ ' : ''}${esc(m.name)} ${playable ? `<span class="badge go">${ch ? 'Desafío' : 'Jugar'}</span>` : '<span class="badge">Próximamente</span>'}</h3>
+        <p>${esc(desc)}</p></div>`).join('');
     $$('#modeList .mode-card').forEach(card => {
-      const m = MODES.find(x => x.id === card.dataset.mode);
-      if (m.comingSoon) return;
-      const go = () => { this.mode = m; this.show('setup'); };
+      const item = list.find(x => x.m.id === card.dataset.mode);
+      if (!item.playable) return;
+      const go = () => { this.mode = item.v; this.show('setup'); };
       card.onclick = go; card.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } };
     });
   },
@@ -1228,11 +1787,12 @@ const App = {
     this.session = mode.start($('#gameRoot'), config, this);
   },
 
-  showResults(html, replay) {
+  showResults(html, replay, extra) {
     if (this.session) { this.session.destroy(); this.session = null; }
-    $('#resultsRoot').innerHTML = html + `<div class="row"><button class="btn primary" id="resAgain">↻ Jugar otra vez</button>
+    $('#resultsRoot').innerHTML = html + `<div class="row"><button class="btn primary" id="resAgain">↻ Jugar otra vez</button>${extra ? `<button class="btn" id="resExtra">${esc(extra.label)}</button>` : ''}
       <button class="btn" id="resSetup">Cambiar configuración</button><button class="btn" data-go="menu">Menú principal</button></div>`;
     $('#resAgain').onclick = () => replay();
+    if (extra) $('#resExtra').onclick = () => extra.fn();
     $('#resSetup').onclick = () => this.show('setup', true);
     this.current = 'game';
     this.show('results', true);
