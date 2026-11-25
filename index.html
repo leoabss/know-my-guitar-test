@@ -115,19 +115,22 @@ input[type=range]{accent-color:var(--accent);width:100%}
 
 /* Juego */
 .game-head{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:10px}
-.target{display:flex;align-items:stretch;gap:10px;flex:1 1 520px;min-width:0}
-.tblock{flex:1;background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
-  padding:8px 14px;display:flex;flex-direction:column;justify-content:center;min-width:0}
-.tblock.main{border-color:var(--accent);background:linear-gradient(180deg,#3a2a17,#241b13)}
-.tlabel .sm{display:none}
-.tlabel{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.tbig{font-size:3.4rem;font-weight:800;line-height:1.05;color:var(--accent);white-space:nowrap}
-.tbig.str{color:var(--accent2)}
-.tbig small{font-size:.5em;font-weight:700;color:var(--text);margin-left:4px}
-.tmid{font-size:2rem;font-weight:800;line-height:1.1}
+.target{flex:0 1 460px;min-width:0;text-align:center;border:1px solid var(--accent);border-radius:var(--radius);
+  background:linear-gradient(180deg,#3a2a17,#211913);padding:10px 18px 12px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.tlabel{font-size:.75rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.tbig{font-size:4.2rem;font-weight:800;line-height:1;color:var(--accent);white-space:nowrap}
+.tline{font-size:1.5rem;color:var(--text);white-space:nowrap}
+.tline b{color:var(--accent2);font-size:1.15em}
+.tline small{color:var(--muted);font-weight:600}
+.tpos{display:flex;align-items:center;gap:10px;margin-top:6px;font-size:1rem;color:var(--muted)}
+.tpos b{color:var(--text);font-size:1.15rem}
+.dots{display:flex;gap:6px}
+.dots i{width:14px;height:14px;border-radius:50%;border:2px solid var(--accent2);display:block}
+.dots i.on{background:var(--ok);border-color:var(--ok);box-shadow:0 0 6px var(--ok)}
 @keyframes pulse{0%{transform:scale(1)}40%{transform:scale(1.12)}100%{transform:scale(1)}}
 .pulse{display:inline-block;animation:pulse .45s ease}
 .stats{display:flex;gap:8px;flex-wrap:wrap}
+@media (min-width:601px){.game-head{justify-content:center;align-items:stretch}.game-head .stats{flex-direction:column;justify-content:center}.game-head .stat{text-align:center}}
 .stat{background:var(--panel);border:1px solid var(--border);border-radius:9px;padding:5px 10px;font-size:.85rem}
 .stat b{font-size:1rem}
 .feedback{min-height:2.6em;margin:10px 0;padding:9px 12px;border-radius:10px;background:var(--panel);border:1px solid var(--border)}
@@ -148,13 +151,9 @@ table.res td,table.res th{padding:6px 8px;border-bottom:1px solid var(--border);
 @media (max-width:600px){
   main{padding:12px}
   .hero h2{font-size:1.8rem}
-  .target{flex-basis:100%;gap:6px}
-  .tblock{padding:6px 10px}
-  .tbig{font-size:2.3rem}
-  .tmid{font-size:1.4rem}
-  .tlabel{font-size:.68rem}
-  .tlabel .lg{display:none}
-  .tlabel .sm{display:inline}
+  .target{flex-basis:100%;padding:8px 12px 10px}
+  .tbig{font-size:3.2rem}
+  .tline{font-size:1.2rem}
   .listen .lnote{min-width:70px;font-size:1.35rem}
   .topbar .pill .txt{display:none}
 }
@@ -955,9 +954,10 @@ const TonicMode = {
     root.innerHTML = `
       <div class="game-head">
         <div class="target" id="gPrompt">
-          <div class="tblock main"><span class="tlabel"><span class="lg">Toca la </span>tónica</span><span class="tbig" id="gTonic">…</span></div>
-          <div class="tblock"><span class="tlabel"><span class="lg">En la </span>cuerda</span><span class="tbig str" id="gStr">…</span></div>
-          <div class="tblock" style="flex:.6"><span class="tlabel"><span class="lg">Posiciones</span><span class="sm">Pos.</span></span><span class="tmid" id="gPos">…</span></div>
+          <span class="tlabel">Toca la tónica</span>
+          <span class="tbig" id="gTonic">…</span>
+          <span class="tline">en la <b id="gStr">…</b></span>
+          <span class="tpos"><span class="dots" id="gDots"></span><span id="gPos">…</span></span>
         </div>
         <div class="stats">
           <span class="stat">Tónica <b id="gRound">0</b>/${totalRounds}</span>
@@ -1008,10 +1008,11 @@ const TonicMode = {
       el('gRound').textContent = Math.min(roundNo, totalRounds);
       el('gHits').textContent = stats.hits; el('gErr').textContent = stats.errors;
       if (st) {
-        const tonicHTML = tName(round.pc), strHTML = `${Music.ordinal(st.s, N)}<small>${esc(Music.pcName(strings[st.s]))}</small>`;
+        const tonicHTML = tName(round.pc), strHTML = `${Music.ordinal(st.s, N)} cuerda <small>(${esc(Music.pcName(strings[st.s]))})</small>`;
         const setBig = (id, html) => { const e = el(id); if (e.dataset.v !== html) { e.dataset.v = html; e.innerHTML = `<span class="pulse">${html}</span>`; } };
         setBig('gTonic', tonicHTML); setBig('gStr', strHTML);
-        el('gPos').textContent = `${st.found.size}/${st.frets.length}`;
+        el('gDots').innerHTML = st.frets.map(f => `<i class="${st.found.has(f) ? 'on' : ''}"></i>`).join('');
+        el('gPos').innerHTML = `<b>${st.found.size}/${st.frets.length}</b> posiciones`;
       }
       el('gStrings').innerHTML = round ? round.steps.map((x, i) =>
         `<span class="ps ${i < round.idx ? 'done' : i === round.idx ? 'cur' : ''}">${Music.ordinal(x.s, N)} ${esc(Music.pcName(strings[x.s]))} · ${x.found.size}/${x.frets.length}</span>`).join('') : '';
